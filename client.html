@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS WebSocket Client</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .connection-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border-left: 4px solid #4299e1;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(66, 153, 225, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+        }
+        
+        .btn-secondary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #f56565, #e53e3e);
+            color: white;
+        }
+        
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 101, 101, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .status.connected {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        
+        .status.disconnected {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        
+        .status.connecting {
+            background: #fef5e7;
+            color: #7b341e;
+            border: 1px solid #f6ad55;
+        }
+        
+        .captions-container {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            line-height: 1.6;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .caption-char {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .caption-char.active {
+            background: #4299e1;
+            color: white;
+            border-radius: 3px;
+            padding: 2px 4px;
+            margin: 0 1px;
+            box-shadow: 0 0 10px rgba(66, 153, 225, 0.5);
+        }
+        
+        .audio-controls {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        audio {
+            width: 100%;
+            max-width: 500px;
+            margin: 10px 0;
+        }
+        
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        
+        .log-sent {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .log-received {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .log-error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4299e1, #3182ce);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 TTS WebSocket Client</h1>
+        
+        <div class="connection-section">
+            <div class="input-group">
+                <label for="wsUrl">WebSocket URL:</label>
+                <input type="text" id="wsUrl" value="ws://localhost:8765" placeholder="wss://your-server.com">
+            </div>
+            
+            <div class="button-group">
+                <button id="connectBtn" class="btn-primary">Connect</button>
+                <button id="disconnectBtn" class="btn-danger" disabled>Disconnect</button>
+            </div>
+            
+            <div id="status" class="status disconnected">Disconnected</div>
+        </div>
+        
+        <div class="input-group">
+            <label for="textInput">Text to Convert:</label>
+            <textarea id="textInput" placeholder="Type your text here...">Artificial Intelligence is the field of computer science that focuses on creating systems capable of performing tasks that normally require human intelligence, such as reasoning, learning, problem-solving, perception, and understanding language. Instead of being explicitly programmed for every step, AI systems can analyze data, identify patterns, and make decisions or predictions. </textarea>
+        </div>
+        
+        <div class="button-group">
+            <button id="sendBtn" class="btn-secondary" disabled>Generate Speech</button>
+            <!--
+            <button id="streamBtn" class="btn-primary" disabled>Stream Text</button>
+        -->
+            <button id="clearBtn" class="btn-danger">Clear</button>
+        </div>
+        
+        <div class="captions-container">
+            <div id="captions">Real-time captions will appear here...</div>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+        </div>
+        
+        <div class="audio-controls">
+            <h3>🔊 Audio Playback</h3>
+            <audio id="audioPlayer" controls></audio>
+            <div id="audioStatus">No audio loaded</div>
+        </div>
+        
+        <div class="log" id="log">
+            <div class="log-entry">Ready to connect...</div>
+        </div>
+    </div>
+
+    <script>
+        class TTSClient {
+            constructor() {
+                this.ws = null;
+                this.isConnected = false;
+                this.currentAudio = null;
+                this.currentAlignment = null;
+                this.animationInterval = null;
+                this.audioQueue = [];
+                this.isPlaying = false;
+                this.initElements();
+                this.bindEvents();
+            }
+            
+            initElements() {
+                this.wsUrlInput = document.getElementById('wsUrl');
+                this.connectBtn = document.getElementById('connectBtn');
+                this.disconnectBtn = document.getElementById('disconnectBtn');
+                this.sendBtn = document.getElementById('sendBtn');
+                /*
+                this.streamBtn = document.getElementById('streamBtn');
+                */
+                this.clearBtn = document.getElementById('clearBtn');
+                this.textInput = document.getElementById('textInput');
+                this.status = document.getElementById('status');
+                this.captions = document.getElementById('captions');
+                this.progressFill = document.getElementById('progressFill');
+                this.audioPlayer = document.getElementById('audioPlayer');
+                this.audioStatus = document.getElementById('audioStatus');
+                this.log = document.getElementById('log');
+            }
+            
+            bindEvents() {
+                this.connectBtn.addEventListener('click', () => this.connect());
+                this.disconnectBtn.addEventListener('click', () => this.disconnect());
+                this.sendBtn.addEventListener('click', () => this.sendText());
+                /*
+                this.streamBtn.addEventListener('click', () => this.streamText());
+                */
+                this.clearBtn.addEventListener('click', () => this.clearAll());
+                this.audioPlayer.addEventListener('ended', () => this.playNextInQueue());
+            }
+            
+            connect() {
+                const url = this.wsUrlInput.value.trim();
+                if (!url) {
+                    this.addLog('Please enter a WebSocket URL', 'error');
+                    return;
+                }
+                
+                this.updateStatus('connecting', 'Connecting...');
+                this.addLog(`Connecting to ${url}...`);
+                
+                try {
+                    this.ws = new WebSocket(url);
+                    
+                    this.ws.onopen = () => {
+                        this.isConnected = true;
+                        this.updateStatus('connected', 'Connected');
+                        this.updateButtons();
+                        this.addLog('Connected successfully!');
+                        
+                        // Send initial chunk
+                        this.sendMessage({text: " ", flush: false});
+                    };
+                    
+                    this.ws.onmessage = (event) => {
+                        this.handleMessage(event.data);
+                    };
+                    
+                    this.ws.onclose = () => {
+                        this.isConnected = false;
+                        this.updateStatus('disconnected', 'Disconnected');
+                        this.updateButtons();
+                        this.addLog('Connection closed');
+                    };
+                    
+                    this.ws.onerror = (error) => {
+                        this.addLog('Connection error: ' + error, 'error');
+                        this.updateStatus('disconnected', 'Connection Error');
+                    };
+                    
+                } catch (error) {
+                    this.addLog('Failed to connect: ' + error, 'error');
+                    this.updateStatus('disconnected', 'Connection Failed');
+                }
+            }
+            
+            disconnect() {
+                if (this.ws) {
+                    // Send final empty chunk
+                    this.sendMessage({text: "", flush: false});
+                    this.ws.close();
+                }
+            }
+            
+            sendMessage(data) {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    const message = JSON.stringify(data);
+                    this.ws.send(message);
+                    this.addLog(`Sent: ${message}`, 'sent');
+                }
+            }
+            
+            handleMessage(data) {
+                try {
+                    const response = JSON.parse(data);
+                    this.addLog(`Received audio data (${response.audio?.length || 0} chars)`, 'received');
+                    
+                    if (response.audio) {
+                        this.playAudio(response.audio);
+                    }
+                    
+                    if (response.alignment) {
+                        this.showAlignment(response.alignment);
+                    }
+                    
+                } catch (error) {
+                    this.addLog('Error parsing response: ' + error, 'error');
+                }
+            }
+            
+           // Add these properties to your constructor:
+
+// Replace playAudio function:
+playAudio(base64Audio) {
+    try {
+        // Convert base64 to binary data
+        const binaryString = atob(base64Audio);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        // Create WAV file with proper header
+        const wavBuffer = this.createWavFile(bytes, 44100, 1, 16);
+        const blob = new Blob([wavBuffer], {type: 'audio/wav'});
+        
+        // Add to queue instead of playing immediately
+        this.audioQueue.push(blob);
+        
+        if (!this.isPlaying) {
+            this.playNextInQueue();
+        }
+        
+    } catch (error) {
+        this.addLog('Error processing audio: ' + error, 'error');
+    }
+}
+
+// Add this new function:
+playNextInQueue() {
+    if (this.audioQueue.length === 0) {
+        this.isPlaying = false;
+        return;
+    }
+    
+    this.isPlaying = true;
+    const audioBlob = this.audioQueue.shift();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    
+    this.audioPlayer.src = audioUrl;
+    this.audioStatus.textContent = 'Playing audio chunk...';
+    
+    this.audioPlayer.play().then(() => {
+        this.addLog('Audio chunk playing');
+    }).catch(error => {
+        this.addLog('Playback error: ' + error, 'error');
+        this.playNextInQueue(); // Try next chunk on error
+    });
+}
+            createWavFile(pcmData, sampleRate, channels, bitsPerSample) {
+                const bytesPerSample = bitsPerSample / 8;
+                const blockAlign = channels * bytesPerSample;
+                const byteRate = sampleRate * blockAlign;
+                const dataSize = pcmData.length;
+                const fileSize = 36 + dataSize;
+                
+                const buffer = new ArrayBuffer(44 + dataSize);
+                const view = new DataView(buffer);
+                
+                // WAV header
+                const writeString = (offset, string) => {
+                    for (let i = 0; i < string.length; i++) {
+                        view.setUint8(offset + i, string.charCodeAt(i));
+                    }
+                };
+                
+                writeString(0, 'RIFF');           // ChunkID
+                view.setUint32(4, fileSize, true); // ChunkSize
+                writeString(8, 'WAVE');           // Format
+                writeString(12, 'fmt ');          // Subchunk1ID
+                view.setUint32(16, 16, true);     // Subchunk1Size
+                view.setUint16(20, 1, true);      // AudioFormat (PCM)
+                view.setUint16(22, channels, true); // NumChannels
+                view.setUint32(24, sampleRate, true); // SampleRate
+                view.setUint32(28, byteRate, true); // ByteRate
+                view.setUint16(32, blockAlign, true); // BlockAlign
+                view.setUint16(34, bitsPerSample, true); // BitsPerSample
+                writeString(36, 'data');          // Subchunk2ID
+                view.setUint32(40, dataSize, true); // Subchunk2Size
+                
+                // Copy PCM data
+                const pcmView = new Uint8Array(buffer, 44);
+                pcmView.set(pcmData);
+                
+                return buffer;
+            }
+            
+            showAlignment(alignment) {
+                this.currentAlignment = alignment;
+                
+                if (!alignment.chars || alignment.chars.length === 0) {
+                    this.captions.textContent = 'No alignment data';
+                    return;
+                }
+                
+                // Display characters
+                this.captions.innerHTML = alignment.chars
+                    .map((char, i) => `<span class="caption-char" data-index="${i}">${char === ' ' ? '&nbsp;' : char}</span>`)
+                    .join('');
+                
+                // Animate character highlighting
+                this.animateAlignment(alignment);
+            }
+            
+            animateAlignment(alignment) {
+                if (this.animationInterval) {
+                    clearInterval(this.animationInterval);
+                }
+                
+                let currentIndex = 0;
+                const startTime = Date.now();
+                
+                this.animationInterval = setInterval(() => {
+                    if (currentIndex >= alignment.chars.length) {
+                        clearInterval(this.animationInterval);
+                        this.progressFill.style.width = '100%';
+                        return;
+                    }
+                    
+                    const elapsed = Date.now() - startTime;
+                    const charStartTime = alignment.char_start_times_ms[currentIndex];
+                    
+                    if (elapsed >= charStartTime) {
+                        // Remove previous highlight
+                        const prevChar = document.querySelector('.caption-char.active');
+                        if (prevChar) {
+                            prevChar.classList.remove('active');
+                        }
+                        
+                        // Highlight current character
+                        const currentChar = document.querySelector(`[data-index="${currentIndex}"]`);
+                        if (currentChar) {
+                            currentChar.classList.add('active');
+                        }
+                        
+                        // Update progress
+                        const progress = (currentIndex / alignment.chars.length) * 100;
+                        this.progressFill.style.width = progress + '%';
+                        
+                        currentIndex++;
+                    }
+                }, 50); // Check every 50ms
+            }
+            
+            sendText() {
+                const text = this.textInput.value.trim();
+                if (!text) {
+                    this.addLog('Please enter some text', 'error');
+                    return;
+                }
+                
+                this.captions.textContent = 'Generating speech...';
+                this.sendMessage({text: text, flush: true});
+            }
+            
+           /* streamText() {
+           streamText() {
+            const text = this.textInput.value.trim();
+            if (!text) return;
+
+            this.captions.textContent = 'Streaming text...';
+            const words = text.split(' ');
+            
+            // Send each chunk with flush=true for immediate generation
+            words.forEach((word, index) => {
+                setTimeout(() => {
+                    this.sendMessage({ text: word + ' ', flush: false });
+                }, index * 500); 
+            });
+            
+            // Close connection
+            setTimeout(() => {
+                this.sendMessage({ text: '', flush: false });
+            }, words.length * 500 + 100);
+        }
+        */
+
+            
+            clearAll() {
+                this.textInput.value = '';
+                this.captions.textContent = 'Captions cleared...';
+                this.progressFill.style.width = '0%';
+                this.audioPlayer.src = '';
+                this.audioStatus.textContent = 'No audio loaded';
+                
+                if (this.animationInterval) {
+                    clearInterval(this.animationInterval);
+                }
+            }
+            
+            updateStatus(type, message) {
+                this.status.className = `status ${type}`;
+                this.status.textContent = message;
+            }
+            
+            updateButtons() {
+                this.connectBtn.disabled = this.isConnected;
+                this.disconnectBtn.disabled = !this.isConnected;
+                this.sendBtn.disabled = !this.isConnected;
+                /*
+                this.streamBtn.disabled = !this.isConnected;
+                */
+            }
+            
+            addLog(message, type = '') {
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type ? 'log-' + type : ''}`;
+                entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                
+                this.log.appendChild(entry);
+                this.log.scrollTop = this.log.scrollHeight;
+                
+                // Keep only last 50 entries
+                while (this.log.children.length > 50) {
+                    this.log.removeChild(this.log.firstChild);
+                }
+            }
+        }
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new TTSClient();
+        });
+    </script>
+</body>
+</html>

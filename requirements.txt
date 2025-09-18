@@ -1,0 +1,11 @@
+git+https://github.com/huggingface/transformers.git
+accelerate
+datasets==3.6.0
+soundfile
+speechbrain
+pyngrok
+websockets
+sounddevice
+numpy
+torch
+torchaudio
