@@ -2,6 +2,8 @@
 
 RealtimeTTS is a local text-to-speech studio built with FastAPI and Microsoft's SpeechT5. Type up to 500 characters and speech streams back chunk by chunk as you pause, continuing as you add more words. Play, replay, stop, or download the finished WAV from the browser.
 
+![The Voice Foundry interface: source text on the left, playback console on the right, and a live readout in the header showing first sound at 1675 ms and 0.46x realtime](docs/screenshot.png)
+
 The application is text-to-speech only.
 
 The application is text-to-speech only. It does not record a microphone, transcribe speech, or send text to a hosted application server. Hugging Face is contacted when model files are downloaded for the first time.
